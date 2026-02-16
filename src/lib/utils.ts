@@ -249,3 +249,58 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 		timeoutId = setTimeout(() => fn(...args), delay);
 	};
 }
+/**
+ * Long press action for mobile and desktop
+ * Does not block scrolling
+ */
+export function longpressAction(node: HTMLElement, callback: () => void) {
+        let timeoutId: ReturnType<typeof setTimeout>;
+        let startY = 0;
+        let moved = false;
+        
+        function startPress(e: TouchEvent | MouseEvent) {
+                moved = false;
+                if (e instanceof TouchEvent) {
+                        startY = e.touches[0].clientY;
+                }
+                timeoutId = setTimeout(() => {
+                        if (!moved) {
+                                node.classList.add('long-pressing');
+                                callback();
+                        }
+                }, 500);
+        }
+        
+        function movePress(e: TouchEvent) {
+                if (e.touches[0].clientY - startY > 10 || startY - e.touches[0].clientY > 10) {
+                        moved = true;
+                        clearTimeout(timeoutId);
+                }
+        }
+        
+        function endPress() {
+                clearTimeout(timeoutId);
+                node.classList.remove('long-pressing');
+        }
+        
+        node.addEventListener('touchstart', startPress, { passive: true });
+        node.addEventListener('touchmove', movePress, { passive: true });
+        node.addEventListener('touchend', endPress);
+        node.addEventListener('mousedown', startPress);
+        node.addEventListener('mouseup', endPress);
+        node.addEventListener('mouseleave', endPress);
+        
+        return {
+                update(newCallback: () => void) {
+                        callback = newCallback;
+                },
+                destroy() {
+                        node.removeEventListener('touchstart', startPress);
+                        node.removeEventListener('touchmove', movePress);
+                        node.removeEventListener('touchend', endPress);
+                        node.removeEventListener('mousedown', startPress);
+                        node.removeEventListener('mouseup', endPress);
+                        node.removeEventListener('mouseleave', endPress);
+                }
+        };
+}
