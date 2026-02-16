@@ -134,31 +134,198 @@
 {/if}
 
 <style>
-        .page-container { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
-        .header-content { padding: 1rem; }
-        .header-content h1 { font-size: 1.5rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 1rem; }
-        .input-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .input-wrapper { position: relative; flex: 1; min-width: 100px; }
-        .article-input { text-transform: uppercase; }
-        .input-divider { color: var(--color-text-muted); font-weight: 600; }
-        .target-input { width: 100px; text-align: center; }
-        .highlighted { background-color: var(--color-bg-tertiary); }
-        .plan-list { padding: 0.5rem; }
-        .plan-item { display: flex; align-items: center; justify-content: space-between; padding: 1rem; background: var(--color-bg-secondary); border-radius: 0.75rem; margin-bottom: 0.5rem; cursor: pointer; min-height: 56px; }
-        .plan-item.locked { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1)); border: 1px solid var(--color-success); }
-        .plan-left { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .plan-right { display: flex; align-items: baseline; gap: 0.25rem; }
-        .plan-target { font-size: 1rem; font-weight: 600; color: var(--color-text-primary); font-family: 'Courier New', monospace; }
-        .plan-divider { color: var(--color-text-muted); }
-        .plan-completed { font-size: 1rem; font-weight: 600; color: var(--color-accent); font-family: 'Courier New', monospace; }
-        .plan-item.locked .plan-completed { color: var(--color-success); }
-        .plan-unit { font-size: 0.875rem; color: var(--color-text-secondary); }
-        .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 1rem; }
-        .modal-info { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--color-bg-tertiary); border-radius: 0.5rem; margin-bottom: 1rem; }
-        .info-text { font-size: 0.875rem; color: var(--color-text-secondary); }
-        .modal-body { padding: 0.5rem 0 1rem; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 0.5rem; }
-        .modal-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .modal-actions .btn { flex: 1; min-width: 80px; }
+	.page-container {
+		min-height: 100vh;
+		min-height: 100dvh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Sticky header вместо fixed */
+	header {
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		background: linear-gradient(to bottom, var(--color-bg-secondary), var(--color-bg-primary));
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.header-content {
+		padding: 1rem;
+	}
+
+	.header-content h1 {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--color-text-primary);
+		margin-bottom: 1rem;
+	}
+
+	.input-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.input-wrapper {
+		position: relative;
+		flex: 1;
+		min-width: 100px;
+	}
+
+	.article-input {
+		text-transform: uppercase;
+	}
+
+	.input-divider {
+		color: var(--color-text-muted);
+		font-weight: 600;
+	}
+
+	.target-input {
+		width: 100px;
+		text-align: center;
+	}
+
+	.highlighted {
+		background-color: var(--color-bg-tertiary);
+	}
+
+	/* Контент без лишнего padding-top */
+	.page-content {
+		flex: 1;
+		padding: 0.5rem;
+		padding-bottom: 80px;
+	}
+
+	.plan-list {
+		padding: 0.5rem;
+	}
+
+	.plan-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 1rem;
+		background: var(--color-bg-secondary);
+		border-radius: 0.75rem;
+		margin-bottom: 0.5rem;
+		cursor: pointer;
+		min-height: 56px;
+	}
+
+	.plan-item.locked {
+		background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
+		border: 1px solid var(--color-success);
+	}
+
+	.plan-left {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.plan-right {
+		display: flex;
+		align-items: baseline;
+		gap: 0.25rem;
+	}
+
+	.plan-target {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+		font-family: 'Courier New', monospace;
+	}
+
+	.plan-divider {
+		color: var(--color-text-muted);
+	}
+
+	.plan-completed {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--color-accent);
+		font-family: 'Courier New', monospace;
+	}
+
+	.plan-item.locked .plan-completed {
+		color: var(--color-success);
+	}
+
+	.plan-unit {
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+	}
+
+	.modal-title {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--color-text-primary);
+		margin-bottom: 1rem;
+	}
+
+	.modal-info {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		background: var(--color-bg-tertiary);
+		border-radius: 0.5rem;
+		margin-bottom: 1rem;
+	}
+
+	.info-text {
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+	}
+
+	.modal-body {
+		padding: 0.5rem 0 1rem;
+	}
+
+	.form-group {
+		margin-bottom: 1rem;
+	}
+
+	.form-group label {
+		display: block;
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+		margin-bottom: 0.5rem;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.modal-actions .btn {
+		flex: 1;
+		min-width: 80px;
+	}
+
+	/* Мобильные фиксы */
+	@media (max-width: 768px) {
+		.header-content h1 {
+			font-size: 1.25rem;
+			margin-bottom: 0.75rem;
+		}
+
+		.input-row {
+			gap: 0.35rem;
+		}
+
+		.target-input {
+			width: 80px;
+		}
+
+		.btn {
+			padding: 0.6rem 1rem;
+			font-size: 0.9rem;
+		}
+	}
 </style>

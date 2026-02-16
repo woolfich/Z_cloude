@@ -125,23 +125,149 @@
 {/if}
 
 <style>
-        .page-container { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
-        .header-content { padding: 1rem; }
-        .header-content h1 { font-size: 1.5rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 1rem; }
-        .input-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-        .input-wrapper { position: relative; flex: 1; min-width: 100px; }
-        .article-input { text-transform: uppercase; }
-        .input-divider { color: var(--color-text-muted); font-weight: 600; }
-        .norm-input { width: 100px; text-align: center; }
-        .highlighted { background-color: var(--color-bg-tertiary); }
-        .rate-list { padding: 0.5rem; }
-        .rate-item { display: flex; align-items: center; padding: 1rem; background: var(--color-bg-secondary); border-radius: 0.75rem; margin-bottom: 0.5rem; cursor: pointer; min-height: 56px; }
-        .rate-item:active { transform: scale(0.99); }
-        .rate-value { font-size: 1rem; font-weight: 600; color: var(--color-text-primary); font-family: 'Courier New', monospace; white-space: nowrap; }
-        .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 1rem; }
-        .modal-body { padding: 0.5rem 0 1rem; }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 0.5rem; }
-        .modal-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-        .modal-actions .btn { flex: 1; min-width: 80px; }
+	.page-container {
+		min-height: 100vh;
+		min-height: 100dvh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* Sticky header вместо fixed */
+	header {
+		position: sticky;
+		top: 0;
+		z-index: 100;
+		background: linear-gradient(to bottom, var(--color-bg-secondary), var(--color-bg-primary));
+		border-bottom: 1px solid var(--color-border);
+	}
+
+	.header-content {
+		padding: 1rem;
+	}
+
+	.header-content h1 {
+		font-size: 1.5rem;
+		font-weight: 700;
+		color: var(--color-text-primary);
+		margin-bottom: 1rem;
+	}
+
+	.input-row {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.input-wrapper {
+		position: relative;
+		flex: 1;
+		min-width: 100px;
+	}
+
+	.article-input {
+		text-transform: uppercase;
+	}
+
+	.input-divider {
+		color: var(--color-text-muted);
+		font-weight: 600;
+	}
+
+	.norm-input {
+		width: 100px;
+		text-align: center;
+	}
+
+	.highlighted {
+		background-color: var(--color-bg-tertiary);
+	}
+
+	/* Контент без лишнего padding-top */
+	:global(.scrollable-content) {
+		flex: 1;
+		padding: 0.5rem !important;
+		padding-bottom: 80px !important;
+	}
+
+	.rate-list {
+		padding: 0.5rem;
+	}
+
+	.rate-item {
+		display: flex;
+		align-items: center;
+		padding: 1rem;
+		background: var(--color-bg-secondary);
+		border-radius: 0.75rem;
+		margin-bottom: 0.5rem;
+		cursor: pointer;
+		min-height: 56px;
+	}
+
+	.rate-item:active {
+		transform: scale(0.99);
+	}
+
+	.rate-value {
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--color-text-primary);
+		font-family: 'Courier New', monospace;
+		white-space: nowrap;
+	}
+
+	.modal-title {
+		font-size: 1.25rem;
+		font-weight: 700;
+		color: var(--color-text-primary);
+		margin-bottom: 1rem;
+	}
+
+	.modal-body {
+		padding: 0.5rem 0 1rem;
+	}
+
+	.form-group {
+		margin-bottom: 1rem;
+	}
+
+	.form-group label {
+		display: block;
+		font-size: 0.875rem;
+		color: var(--color-text-secondary);
+		margin-bottom: 0.5rem;
+	}
+
+	.modal-actions {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+	}
+
+	.modal-actions .btn {
+		flex: 1;
+		min-width: 80px;
+	}
+
+	/* Мобильные фиксы */
+	@media (max-width: 768px) {
+		.header-content h1 {
+			font-size: 1.25rem;
+			margin-bottom: 0.75rem;
+		}
+
+		.input-row {
+			gap: 0.35rem;
+		}
+
+		.norm-input {
+			width: 80px;
+		}
+
+		.btn {
+			padding: 0.6rem 1rem;
+			font-size: 0.9rem;
+		}
+	}
 </style>
