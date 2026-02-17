@@ -1,6 +1,6 @@
-<script lang="ts">
-        import { rates, planItems, calculatedPlanItems, addPlanItem, updatePlanItem, deletePlanItem } from '$lib/stores';
-        import { normalizeArticle, formatQty, longpressAction } from '$lib/utils';
+	<script lang="ts">
+        import { rates, planItems, calculatedPlanItems, addPlanItem, updatePlanItem, deletePlanItem, welders } from '$lib/stores';
+        import { normalizeArticle, formatQty, longpressAction, getWelderProgressByArticle } from '$lib/utils';
         import type { PlanItem } from '$lib/types';
         
         let articleInput = $state('');
@@ -9,6 +9,9 @@
         let highlightedIndex = $state(0);
         let editModal = $state<{ show: boolean; planItem: PlanItem | null }>({ show: false, planItem: null });
         let editTargetInput = $state('');
+        let infoModal = $state<{ show: boolean; article: string; target: number }>({ show: false, article: '', target: 0 });
+        
+        let infoProgress = $derived(infoModal.show ? getWelderProgressByArticle(infoModal.article, $welders) : []);
         
         let filteredSuggestions = $derived(getFilteredSuggestions(articleInput, $rates));
         let suggestionsAvailable = $derived(filteredSuggestions.length > 0 && showSuggestions);
@@ -36,9 +39,9 @@
                 const article = normalizeArticle(articleInput);
                 const target = parseFloat(targetInput.replace(',', '.'));
                 if (!article) { alert('Введите артикул'); return; }
-                if (!$rates.some(r => r.article === article)) { alert('Артикул не найден в нормах. Сначала добавьте норму времени.'); return; }
+                if (!$rates.some(r => r.article === article)) { alert('Артикул не найден в нормах.'); return; }
                 if (isNaN(target) || target <= 0) { alert('Введите корректное количество'); return; }
-                if (!addPlanItem(article, target)) { alert('Позиция для этого артикула уже существует'); return; }
+                if (!addPlanItem(article, target)) { alert('Позиция уже существует'); return; }
                 articleInput = ''; targetInput = ''; showSuggestions = false;
         }
         
@@ -60,13 +63,18 @@
                 }
         }
         
+        function showInfo(planItem: PlanItem) {
+                infoModal = { show: true, article: planItem.article, target: planItem.target };
+        }
+        
         function closeEditModal() { editModal = { show: false, planItem: null }; }
+        function closeInfoModal() { infoModal = { show: false, article: '', target: 0 }; }
 </script>
 
 <svelte:head><title>WeldTrack - План</title></svelte:head>
 
 <div class="page-container">
-        <header class="fixed-header">
+        <header>
                 <div class="header-content">
                         <h1>План производства</h1>
                         <div class="input-row">
@@ -89,7 +97,7 @@
                 </div>
         </header>
         
-        <div class="scrollable-content page-content">
+        <div class="scrollable-content">
                 {#if $calculatedPlanItems.length === 0}
                         <div class="empty-state"><div class="empty-state-icon">🎯</div><div class="empty-state-text">Нет позиций плана.<br/>Добавьте первую позицию выше.<br/><br/><small>Сначала добавьте нормы времени для артикулов.</small></div></div>
                 {:else}
@@ -100,12 +108,13 @@
                                                         <span class="article-badge" class:article-locked={planItem.locked}>{planItem.article}</span>
                                                         {#if planItem.locked}<span class="locked-badge">ПЛАН ВЫПОЛНЕН</span>{/if}
                                                 </div>
-                                                <div class="plan-right">
+                                                <div class="plan-center">
                                                         <span class="plan-target">{formatQty(planItem.target)}</span>
                                                         <span class="plan-divider">/</span>
                                                         <span class="plan-completed">{formatQty(planItem.completed)}</span>
                                                         <span class="plan-unit">шт</span>
                                                 </div>
+                                                <button class="info-btn" type="button" onclick={(e) => { e.stopPropagation(); showInfo(planItem); }}>ℹ️</button>
                                         </div>
                                 {/each}
                         </div>
@@ -113,6 +122,7 @@
         </div>
 </div>
 
+<!-- Edit Modal -->
 {#if editModal.show && editModal.planItem}
 <div class="modal-overlay" onclick={closeEditModal}>
         <div class="modal-content" onclick={(e) => e.stopPropagation()}>
@@ -133,199 +143,86 @@
 </div>
 {/if}
 
+<!-- Info Modal -->
+{#if infoModal.show}
+<div class="modal-overlay" onclick={closeInfoModal}>
+        <div class="modal-content" onclick={(e) => e.stopPropagation()}>
+                <h2 class="modal-title">{infoModal.article}</h2>
+                <div class="modal-info">
+                        <span class="info-text">План: {formatQty(infoModal.target)} шт</span>
+                </div>
+                <div class="modal-body">
+                        {#if infoProgress.length === 0}
+                                <div class="no-progress">Нет записей</div>
+                        {:else}
+                                <div class="progress-list">
+                                        {#each infoProgress as p}
+                                                <div class="progress-item">
+                                                        <span class="welder-name">{p.lastName}</span>
+                                                        <span class="dotted-line"></span>
+                                                        <span class="progress-qty">{formatQty(p.quantity)} шт</span>
+                                                </div>
+                                        {/each}
+                                </div>
+                        {/if}
+                </div>
+                <button class="btn btn-secondary w-full" onclick={closeInfoModal}>Закрыть</button>
+        </div>
+</div>
+{/if}
+
 <style>
-	.page-container {
-		min-height: 100vh;
-		min-height: 100dvh;
-		display: flex;
-		flex-direction: column;
-	}
-
-	/* Sticky header вместо fixed */
-	header {
-		position: sticky;
-		top: 0;
-		z-index: 100;
-		background: linear-gradient(to bottom, var(--color-bg-secondary), var(--color-bg-primary));
-		border-bottom: 1px solid var(--color-border);
-	}
-
-	.header-content {
-		padding: 1rem;
-	}
-
-	.header-content h1 {
-		font-size: 1.5rem;
-		font-weight: 700;
-		color: var(--color-text-primary);
-		margin-bottom: 1rem;
-	}
-
-	.input-row {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-	}
-
-	.input-wrapper {
-		position: relative;
-		flex: 1;
-		min-width: 100px;
-	}
-
-	.article-input {
-		text-transform: uppercase;
-	}
-
-	.input-divider {
-		color: var(--color-text-muted);
-		font-weight: 600;
-	}
-
-	.target-input {
-		width: 100px;
-		text-align: center;
-	}
-
-	.highlighted {
-		background-color: var(--color-bg-tertiary);
-	}
-
-	/* Контент без лишнего padding-top */
-	.page-content {
-		flex: 1;
-		padding: 0.5rem;
-		padding-bottom: 80px;
-	}
-
-	.plan-list {
-		padding: 0.5rem;
-	}
-
-	.plan-item {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 1rem;
-		background: var(--color-bg-secondary);
-		border-radius: 0.75rem;
-		margin-bottom: 0.5rem;
-		cursor: pointer;
-		min-height: 56px;
-	}
-
-	.plan-item.locked {
-		background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1));
-		border: 1px solid var(--color-success);
-	}
-
-	.plan-left {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-	}
-
-	.plan-right {
-		display: flex;
-		align-items: baseline;
-		gap: 0.25rem;
-	}
-
-	.plan-target {
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--color-text-primary);
-		font-family: 'Courier New', monospace;
-	}
-
-	.plan-divider {
-		color: var(--color-text-muted);
-	}
-
-	.plan-completed {
-		font-size: 1rem;
-		font-weight: 600;
-		color: var(--color-accent);
-		font-family: 'Courier New', monospace;
-	}
-
-	.plan-item.locked .plan-completed {
-		color: var(--color-success);
-	}
-
-	.plan-unit {
-		font-size: 0.875rem;
-		color: var(--color-text-secondary);
-	}
-
-	.modal-title {
-		font-size: 1.25rem;
-		font-weight: 700;
-		color: var(--color-text-primary);
-		margin-bottom: 1rem;
-	}
-
-	.modal-info {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
-		padding: 0.75rem;
-		background: var(--color-bg-tertiary);
-		border-radius: 0.5rem;
-		margin-bottom: 1rem;
-	}
-
-	.info-text {
-		font-size: 0.875rem;
-		color: var(--color-text-secondary);
-	}
-
-	.modal-body {
-		padding: 0.5rem 0 1rem;
-	}
-
-	.form-group {
-		margin-bottom: 1rem;
-	}
-
-	.form-group label {
-		display: block;
-		font-size: 0.875rem;
-		color: var(--color-text-secondary);
-		margin-bottom: 0.5rem;
-	}
-
-	.modal-actions {
-		display: flex;
-		gap: 0.5rem;
-		flex-wrap: wrap;
-	}
-
-	.modal-actions .btn {
-		flex: 1;
-		min-width: 80px;
-	}
-
-	/* Мобильные фиксы */
-	@media (max-width: 768px) {
-		.header-content h1 {
-			font-size: 1.25rem;
-			margin-bottom: 0.75rem;
-		}
-
-		.input-row {
-			gap: 0.35rem;
-		}
-
-		.target-input {
-			width: 80px;
-		}
-
-		.btn {
-			padding: 0.6rem 1rem;
-			font-size: 0.9rem;
-		}
-	}
+        .page-container { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+        
+        header { position: sticky; top: 0; z-index: 100; background: linear-gradient(to bottom, var(--color-bg-secondary), var(--color-bg-primary)); border-bottom: 1px solid var(--color-border); }
+        
+        .header-content { padding: 1rem; }
+        .header-content h1 { font-size: 1.5rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 1rem; }
+        
+        .input-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+        .input-wrapper { position: relative; flex: 1; min-width: 100px; }
+        .article-input { text-transform: uppercase; }
+        .input-divider { color: var(--color-text-muted); font-weight: 600; }
+        .target-input { width: 100px; text-align: center; }
+        
+        .scrollable-content { flex: 1; padding: 0.5rem; padding-bottom: 80px; }
+        
+        .plan-list { padding: 0.5rem; }
+        
+        .plan-item { display: flex; align-items: center; padding: 1rem; background: var(--color-bg-secondary); border-radius: 0.75rem; margin-bottom: 0.5rem; min-height: 56px; }
+        .plan-item.locked { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1)); border: 1px solid var(--color-success); }
+        
+        .plan-left { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; min-width: 120px; }
+        .plan-center { display: flex; align-items: baseline; gap: 0.25rem; flex: 1; justify-content: center; }
+        .plan-target { font-size: 1rem; font-weight: 600; color: var(--color-text-primary); font-family: 'Courier New', monospace; }
+        .plan-divider { color: var(--color-text-muted); }
+        .plan-completed { font-size: 1rem; font-weight: 600; color: var(--color-accent); font-family: 'Courier New', monospace; }
+        .plan-item.locked .plan-completed { color: var(--color-success); }
+        .plan-unit { font-size: 0.875rem; color: var(--color-text-secondary); }
+        
+        .info-btn { background: none; border: none; font-size: 1.25rem; cursor: pointer; padding: 0.5rem; min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+        
+        .modal-title { font-size: 1.25rem; font-weight: 700; color: var(--color-text-primary); margin-bottom: 1rem; }
+        .modal-info { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem; background: var(--color-bg-tertiary); border-radius: 0.5rem; margin-bottom: 1rem; }
+        .info-text { font-size: 0.875rem; color: var(--color-text-secondary); }
+        .modal-body { padding: 0.5rem 0 1rem; }
+        
+        .no-progress { color: var(--color-text-muted); text-align: center; padding: 1rem; }
+        
+        .progress-list { display: flex; flex-direction: column; gap: 0.5rem; }
+        .progress-item { display: flex; align-items: center; padding: 0.75rem; background: var(--color-bg-tertiary); border-radius: 0.5rem; }
+        .progress-item .welder-name { font-weight: 600; color: var(--color-text-primary); }
+        .progress-qty { font-weight: 600; color: var(--color-accent); font-family: 'Courier New', monospace; white-space: nowrap; }
+        
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; font-size: 0.875rem; color: var(--color-text-secondary); margin-bottom: 0.5rem; }
+        
+        .modal-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+        .modal-actions .btn { flex: 1; min-width: 80px; }
+        .w-full { width: 100%; }
+        
+        @media (max-width: 768px) {
+                .plan-left { min-width: auto; }
+                .plan-center { justify-content: flex-end; }
+        }
 </style>
